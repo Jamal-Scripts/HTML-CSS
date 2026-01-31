@@ -1,1 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        PROJECT 2: RESPONSIVE NAVIGATION WITH ANIMATED HAMBURGER MENU
+        ==============================================================
+        This project demonstrates intermediate HTML/CSS skills including:
+        - CSS-only hamburger menu animation (no JavaScript required)
+        - Checkbox hack for toggle functionality
+        - CSS Transforms for menu icon morphing animation
+        - Dropdown menus using :hover and :focus-within
+        - Smooth slide-in mobile navigation panel
+        - Backdrop blur effect for modern glass-morphism
+        - Accessibility considerations with proper ARIA labels
+        - Advanced positioning with fixed and absolute elements
+        
+        Author: [Your Name]
+        Purpose: Showcase a fully functional responsive navigation system
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Navigation Menu</title>
+    
+    <!-- 
+        Google Fonts Import: Using DM Sans for a clean, modern look
+        with excellent legibility at various sizes
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 
+            CSS CUSTOM PROPERTIES
+            =====================
+            Centralizing design tokens for consistent theming.
+            This approach makes it easy to create dark/light mode
+            variants by simply updating these variables.
+        */
+        :root {
+            /* Color system using HSL for easier manipulation */
+            --color-primary: hsl(230, 80%, 55%);
+            --color-primary-hover: hsl(230, 80%, 45%);
+            --color-primary-light: hsl(230, 80%, 95%);
+            
+            /* Neutral palette for text and backgrounds */
+            --color-white: hsl(0, 0%, 100%);
+            --color-gray-50: hsl(220, 20%, 98%);
+            --color-gray-100: hsl(220, 15%, 95%);
+            --color-gray-200: hsl(220, 15%, 90%);
+            --color-gray-400: hsl(220, 10%, 60%);
+            --color-gray-600: hsl(220, 10%, 40%);
+            --color-gray-800: hsl(220, 15%, 20%);
+            --color-gray-900: hsl(220, 20%, 10%);
+            
+            /* Navigation specific dimensions */
+            --nav-height: 70px;
+            --nav-padding: 1.5rem;
+            
+            /* Mobile menu dimensions */
+            --mobile-menu-width: 280px;
+            
+            /* Animation timing functions */
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Z-index layers for proper stacking */
+            --z-nav: 100;
+            --z-mobile-menu: 200;
+            --z-overlay: 150;
+        }
 
+        /* 
+            CSS RESET
+            =========
+            Minimal reset focusing on elements used in navigation.
+            Ensures consistent rendering across browsers.
+        */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 
+            Remove default list styling and link underlines
+            for cleaner navigation appearance
+        */
+        ul {
+            list-style: none;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* 
+            BODY STYLES
+            ===========
+            Setting base typography and ensuring the page can scroll
+            to demonstrate the fixed navigation behavior
+        */
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--color-gray-50);
+            color: var(--color-gray-800);
+            line-height: 1.6;
+            /* 
+                Min-height ensures we have scrollable content
+                to see the fixed header in action
+            */
+            min-height: 200vh;
+        }
+
+        /* 
+            HEADER / NAVIGATION BAR
+            =======================
+            Fixed positioning keeps the nav visible while scrolling.
+            Using backdrop-filter for a frosted glass effect that
+            allows content to show through slightly.
+        */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--nav-height);
+            background: rgba(255, 255, 255, 0.85);
+            /* 
+                Backdrop-filter creates the blur effect behind the nav.
+                This requires -webkit prefix for Safari compatibility.
+            */
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--color-gray-200);
+            z-index: var(--z-nav);
+        }
+
+        /* 
+            NAV CONTAINER
+            =============
+            Flexbox layout for horizontal arrangement of logo,
+            main navigation, and action buttons. The container
+            constrains content width on large screens.
+        */
+        .nav-container {
+            max-width: 1280px;
+            height: 100%;
+            margin: 0 auto;
+            padding: 0 var(--nav-padding);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* 
+            LOGO STYLES
+            ===========
+            The logo uses a gradient text effect achieved with
+            background-clip and transparent text color. This
+            technique creates eye-catching brand typography.
+        */
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            /* 
+                Gradient text effect: set background as gradient,
+                clip it to text, and make text color transparent
+            */
+            background: linear-gradient(135deg, var(--color-primary), hsl(280, 80%, 55%));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            /* Fallback for browsers that don't support gradient text */
+            color: var(--color-primary);
+        }
+
+        /* 
+            MAIN NAVIGATION LIST
+            ====================
+            Horizontal flexbox layout for desktop navigation.
+            Each item can contain either a simple link or a
+            dropdown menu system.
+        */
+        .nav-list {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* 
+            NAVIGATION ITEM CONTAINER
+            =========================
+            Position relative is crucial here - it establishes
+            the positioning context for the dropdown menus that
+            will be positioned absolutely within.
+        */
+        .nav-item {
+            position: relative;
+        }
+
+        /* 
+            NAVIGATION LINKS
+            ================
+            Links have generous padding for larger click targets.
+            The transition enables smooth color and background
+            changes on hover/focus states.
+        */
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.625rem 1rem;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: var(--color-gray-600);
+            border-radius: 0.5rem;
+            transition: color 200ms var(--ease-in-out),
+                        background-color 200ms var(--ease-in-out);
+        }
+
+        .nav-link:hover,
+        .nav-link:focus {
+            color: var(--color-gray-900);
+            background-color: var(--color-gray-100);
+        }
+
+        /* 
+            DROPDOWN ARROW ICON
+            ===================
+            CSS-only arrow using border technique. The arrow rotates
+            when the parent dropdown is open, providing visual feedback.
+        */
+        .dropdown-arrow {
+            width: 0;
+            height: 0;
+            /* 
+                Creating a downward pointing triangle using
+                transparent borders on sides and colored top border
+            */
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid currentColor;
+            transition: transform 200ms var(--ease-in-out);
+        }
+
+        /* 
+            DROPDOWN MENU PANEL
+            ===================
+            The dropdown is positioned absolutely below its trigger.
+            It starts invisible (opacity: 0) and slightly above its
+            final position, then animates into view on hover.
+        */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            min-width: 220px;
+            padding: 0.5rem;
+            background: var(--color-white);
+            border: 1px solid var(--color-gray-200);
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+            /* 
+                Initial state: invisible and slightly above
+                final position for a subtle rise effect
+            */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: opacity 200ms var(--ease-in-out),
+                        visibility 200ms var(--ease-in-out),
+                        transform 200ms var(--ease-in-out);
+        }
+
+        /* 
+            DROPDOWN OPEN STATE
+            ===================
+            Using :hover on the parent item and :focus-within for
+            keyboard accessibility. The dropdown becomes visible
+            and moves to its final position.
+        */
+        .nav-item:hover .dropdown-menu,
+        .nav-item:focus-within .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* Rotate arrow when dropdown is open */
+        .nav-item:hover .dropdown-arrow,
+        .nav-item:focus-within .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* 
+            DROPDOWN MENU ITEMS
+            ===================
+            Each item in the dropdown has its own hover state
+            with a colored left border accent for visual feedback.
+        */
+        .dropdown-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            color: var(--color-gray-600);
+            border-radius: 0.5rem;
+            /* 
+                Left border starts transparent and becomes
+                colored on hover for a subtle accent effect
+            */
+            border-left: 3px solid transparent;
+            transition: all 150ms var(--ease-in-out);
+        }
+
+        .dropdown-item:hover,
+        .dropdown-item:focus {
+            color: var(--color-primary);
+            background: var(--color-primary-light);
+            border-left-color: var(--color-primary);
+            /* 
+                Slight indent on hover creates a tactile feel
+                as if the item is being pressed
+            */
+            padding-left: 1.25rem;
+        }
+
+        /* 
+            CTA BUTTON IN NAVIGATION
+            ========================
+            The primary action button stands out with a filled
+            background and contrasting text color.
+        */
+        .nav-cta {
+            padding: 0.625rem 1.25rem;
+            background: var(--color-primary);
+            color: var(--color-white);
+            font-size: 0.9375rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: background-color 200ms var(--ease-in-out),
+                        transform 100ms var(--ease-in-out);
+        }
+
+        .nav-cta:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .nav-cta:active {
+            transform: scale(0.97);
+        }
+
+        /* 
+            HAMBURGER MENU TOGGLE
+            =====================
+            This section implements a CSS-only hamburger menu using
+            the "checkbox hack". A hidden checkbox controls the menu
+            state, and its :checked pseudo-class triggers all the
+            mobile menu animations.
+        */
+        
+        /* 
+            Hidden checkbox that controls menu state
+            It's visually hidden but remains accessible
+        */
+        .menu-toggle {
+            display: none;
+        }
+
+        /* 
+            HAMBURGER BUTTON
+            ================
+            The visible button that users click. It contains three
+            spans that transform into an X when the menu is open.
+        */
+        .hamburger {
+            /* Hidden by default on desktop */
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 44px;
+            height: 44px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            /* 
+                Position relative allows us to position the
+                hamburger lines (spans) precisely
+            */
+            position: relative;
+            z-index: calc(var(--z-mobile-menu) + 1);
+        }
+
+        /* 
+            HAMBURGER LINES
+            ===============
+            Three lines that make up the hamburger icon.
+            Each line will animate differently when the menu opens:
+            - Top line rotates clockwise
+            - Middle line fades out
+            - Bottom line rotates counter-clockwise
+        */
+        .hamburger-line {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: var(--color-gray-800);
+            border-radius: 2px;
+            transition: transform 300ms var(--ease-out-expo),
+                        opacity 300ms var(--ease-out-expo);
+            /* 
+                Position absolute allows precise control
+                over each line's position
+            */
+            position: absolute;
+        }
+
+        /* Position the three lines with appropriate spacing */
+        .hamburger-line:nth-child(1) {
+            transform: translateY(-7px);
+        }
+
+        .hamburger-line:nth-child(2) {
+            /* Middle line - no transform needed */
+        }
+
+        .hamburger-line:nth-child(3) {
+            transform: translateY(7px);
+        }
+
+        /* 
+            HAMBURGER X TRANSFORMATION
+            ==========================
+            When the hidden checkbox is checked, the hamburger
+            lines transform into an X shape through rotation.
+        */
+        .menu-toggle:checked ~ .nav-container .hamburger-line:nth-child(1) {
+            transform: rotate(45deg);
+        }
+
+        .menu-toggle:checked ~ .nav-container .hamburger-line:nth-child(2) {
+            opacity: 0;
+            transform: scaleX(0);
+        }
+
+        .menu-toggle:checked ~ .nav-container .hamburger-line:nth-child(3) {
+            transform: rotate(-45deg);
+        }
+
+        /* 
+            MOBILE MENU OVERLAY
+            ===================
+            A semi-transparent overlay that appears behind the
+            mobile menu, dimming the main content and providing
+            a click target to close the menu.
+        */
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: var(--z-overlay);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 300ms var(--ease-in-out),
+                        visibility 300ms var(--ease-in-out);
+        }
+
+        /* 
+            MOBILE NAVIGATION PANEL
+            =======================
+            The slide-out panel that contains navigation links
+            on mobile devices. It slides in from the right side.
+        */
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: var(--mobile-menu-width);
+            height: 100vh;
+            /* Full viewport height */
+            height: 100dvh;
+            /* Dynamic viewport height for mobile browsers */
+            background: var(--color-white);
+            padding: calc(var(--nav-height) + 1rem) 1.5rem 2rem;
+            z-index: var(--z-mobile-menu);
+            /* 
+                Initial state: translated off-screen to the right
+            */
+            transform: translateX(100%);
+            transition: transform 400ms var(--ease-out-expo);
+            /* 
+                Overflow-y allows scrolling if menu content
+                exceeds viewport height
+            */
+            overflow-y: auto;
+        }
+
+        /* 
+            MOBILE MENU OPEN STATE
+            ======================
+            When the checkbox is checked, the overlay fades in
+            and the navigation panel slides into view.
+        */
+        .menu-toggle:checked ~ .mobile-overlay {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .menu-toggle:checked ~ .mobile-nav {
+            transform: translateX(0);
+        }
+
+        /* 
+            MOBILE NAVIGATION LIST STYLES
+            =============================
+            On mobile, navigation items stack vertically with
+            full-width links for easier touch interaction.
+        */
+        .mobile-nav-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .mobile-nav-link {
+            display: block;
+            padding: 0.875rem 1rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--color-gray-700);
+            border-radius: 0.5rem;
+            transition: background-color 150ms var(--ease-in-out);
+        }
+
+        .mobile-nav-link:hover,
+        .mobile-nav-link:focus {
+            background: var(--color-gray-100);
+        }
+
+        /* 
+            MOBILE DROPDOWN STYLES
+            ======================
+            Mobile dropdowns expand vertically below their trigger
+            instead of overlaying. Using details/summary HTML elements
+            could be an alternative approach for this.
+        */
+        .mobile-dropdown-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.875rem 1rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--color-gray-700);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 150ms var(--ease-in-out);
+        }
+
+        .mobile-dropdown-title:hover {
+            background: var(--color-gray-100);
+        }
+
+        .mobile-dropdown-content {
+            padding-left: 1rem;
+            /* 
+                Using max-height for animating the dropdown open/close.
+                Height cannot be animated from 0 to auto, but max-height can.
+            */
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 300ms var(--ease-in-out);
+        }
+
+        /* 
+            Mobile dropdown toggle using checkbox hack
+            Each dropdown has its own hidden checkbox
+        */
+        .mobile-dropdown-toggle {
+            display: none;
+        }
+
+        .mobile-dropdown-toggle:checked ~ .mobile-dropdown-content {
+            max-height: 500px;
+        }
+
+        .mobile-dropdown-toggle:checked ~ .mobile-dropdown-title .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .mobile-dropdown-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            font-size: 0.9375rem;
+            color: var(--color-gray-600);
+            border-radius: 0.5rem;
+        }
+
+        .mobile-dropdown-item:hover,
+        .mobile-dropdown-item:focus {
+            color: var(--color-primary);
+            background: var(--color-primary-light);
+        }
+
+        /* 
+            MOBILE CTA BUTTON
+            =================
+            Full-width call-to-action button at the bottom
+            of the mobile menu for easy access
+        */
+        .mobile-nav-cta {
+            display: block;
+            width: 100%;
+            margin-top: 1.5rem;
+            padding: 0.875rem;
+            background: var(--color-primary);
+            color: var(--color-white);
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 0.5rem;
+            transition: background-color 200ms var(--ease-in-out);
+        }
+
+        .mobile-nav-cta:hover {
+            background: var(--color-primary-hover);
+        }
+
+        /* 
+            RESPONSIVE BREAKPOINTS
+            ======================
+            At 768px and below, switch from desktop navigation
+            to mobile hamburger menu layout.
+        */
+        @media (max-width: 768px) {
+            /* Hide desktop navigation elements */
+            .nav-list,
+            .nav-cta {
+                display: none;
+            }
+
+            /* Show mobile menu elements */
+            .hamburger {
+                display: flex;
+            }
+
+            .mobile-overlay,
+            .mobile-nav {
+                display: block;
+            }
+        }
+
+        /* 
+            MAIN CONTENT PLACEHOLDER
+            ========================
+            Demo content to show how the page scrolls
+            behind the fixed navigation
+        */
+        .main-content {
+            padding-top: calc(var(--nav-height) + 3rem);
+            max-width: 800px;
+            margin: 0 auto;
+            padding-left: var(--nav-padding);
+            padding-right: var(--nav-padding);
+        }
+
+        .content-section {
+            margin-bottom: 3rem;
+        }
+
+        .content-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--color-gray-900);
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .content-section p {
+            font-size: 1.125rem;
+            color: var(--color-gray-600);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Visual indicator for scrolling behavior */
+        .scroll-indicator {
+            padding: 1rem;
+            background: var(--color-gray-100);
+            border-radius: 0.5rem;
+            text-align: center;
+            color: var(--color-gray-500);
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 
+        HEADER ELEMENT
+        ==============
+        Contains all navigation components including the hidden
+        checkbox toggle, main navigation, and mobile menu
+    -->
+    <header class="header">
+        <!-- 
+            Hidden checkbox for mobile menu toggle
+            The "for" attribute on the hamburger label connects
+            to this checkbox, allowing clicks to toggle it
+        -->
+        <input type="checkbox" id="menu-toggle" class="menu-toggle" aria-hidden="true">
+        
+        <!-- 
+            NAVIGATION CONTAINER
+            ====================
+            Holds the logo, desktop navigation, and hamburger button
+        -->
+        <nav class="nav-container" aria-label="Main navigation">
+            <!-- Brand logo/name -->
+            <a href="#" class="logo">BrandName</a>
+            
+            <!-- 
+                DESKTOP NAVIGATION
+                ==================
+                Hidden on mobile, this is the main horizontal navigation
+            -->
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Home</a>
+                </li>
+                
+                <!-- 
+                    DROPDOWN MENU EXAMPLE
+                    =====================
+                    Products link with dropdown submenu
+                -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Products
+                        <span class="dropdown-arrow" aria-hidden="true"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#" class="dropdown-item">Analytics Platform</a></li>
+                        <li><a href="#" class="dropdown-item">Marketing Suite</a></li>
+                        <li><a href="#" class="dropdown-item">CRM Solution</a></li>
+                        <li><a href="#" class="dropdown-item">Developer Tools</a></li>
+                    </ul>
+                </li>
+                
+                <!-- Another dropdown example -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Resources
+                        <span class="dropdown-arrow" aria-hidden="true"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#" class="dropdown-item">Documentation</a></li>
+                        <li><a href="#" class="dropdown-item">API Reference</a></li>
+                        <li><a href="#" class="dropdown-item">Blog</a></li>
+                        <li><a href="#" class="dropdown-item">Community</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Pricing</a>
+                </li>
+                
+                <li class="nav-item">
+                    <a href="#" class="nav-link">About</a>
+                </li>
+            </ul>
+            
+            <!-- Desktop CTA button -->
+            <a href="#" class="nav-cta">Get Started</a>
+            
+            <!-- 
+                HAMBURGER BUTTON
+                ================
+                Label connected to the hidden checkbox for mobile menu toggle.
+                The three spans create the hamburger icon that animates to X.
+            -->
+            <label for="menu-toggle" class="hamburger" aria-label="Toggle menu">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </label>
+        </nav>
+        
+        <!-- 
+            MOBILE OVERLAY
+            ==============
+            Clicking this label closes the menu by unchecking the checkbox
+        -->
+        <label for="menu-toggle" class="mobile-overlay" aria-hidden="true"></label>
+        
+        <!-- 
+            MOBILE NAVIGATION PANEL
+            =======================
+            Slide-out panel containing mobile-optimized navigation
+        -->
+        <nav class="mobile-nav" aria-label="Mobile navigation">
+            <ul class="mobile-nav-list">
+                <li>
+                    <a href="#" class="mobile-nav-link">Home</a>
+                </li>
+                
+                <!-- 
+                    MOBILE DROPDOWN
+                    ===============
+                    Uses its own checkbox for expand/collapse functionality
+                -->
+                <li>
+                    <input type="checkbox" id="mobile-products" class="mobile-dropdown-toggle">
+                    <label for="mobile-products" class="mobile-dropdown-title">
+                        Products
+                        <span class="dropdown-arrow" aria-hidden="true"></span>
+                    </label>
+                    <div class="mobile-dropdown-content">
+                        <a href="#" class="mobile-dropdown-item">Analytics Platform</a>
+                        <a href="#" class="mobile-dropdown-item">Marketing Suite</a>
+                        <a href="#" class="mobile-dropdown-item">CRM Solution</a>
+                        <a href="#" class="mobile-dropdown-item">Developer Tools</a>
+                    </div>
+                </li>
+                
+                <li>
+                    <input type="checkbox" id="mobile-resources" class="mobile-dropdown-toggle">
+                    <label for="mobile-resources" class="mobile-dropdown-title">
+                        Resources
+                        <span class="dropdown-arrow" aria-hidden="true"></span>
+                    </label>
+                    <div class="mobile-dropdown-content">
+                        <a href="#" class="mobile-dropdown-item">Documentation</a>
+                        <a href="#" class="mobile-dropdown-item">API Reference</a>
+                        <a href="#" class="mobile-dropdown-item">Blog</a>
+                        <a href="#" class="mobile-dropdown-item">Community</a>
+                    </div>
+                </li>
+                
+                <li>
+                    <a href="#" class="mobile-nav-link">Pricing</a>
+                </li>
+                
+                <li>
+                    <a href="#" class="mobile-nav-link">About</a>
+                </li>
+            </ul>
+            
+            <a href="#" class="mobile-nav-cta">Get Started</a>
+        </nav>
+    </header>
+
+    <!-- 
+        MAIN CONTENT
+        ============
+        Placeholder content to demonstrate scrolling behavior
+        with the fixed navigation header
+    -->
+    <main class="main-content">
+        <section class="content-section">
+            <h1>Responsive Navigation Demo</h1>
+            <p>
+                This page demonstrates a fully responsive navigation system built 
+                with pure HTML and CSS. The navigation features smooth animations, 
+                dropdown menus, and a mobile-friendly hamburger menu that transforms 
+                into an X when opened.
+            </p>
+            <p>
+                Scroll down to see how the navigation remains fixed at the top of 
+                the viewport. On mobile devices (or when the browser window is 
+                narrower than 768px), the desktop navigation is replaced with 
+                a hamburger menu that reveals a slide-out panel.
+            </p>
+            <div class="scroll-indicator">
+                ↓ Scroll down to see the fixed navigation in action ↓
+            </div>
+        </section>
+        
+        <section class="content-section">
+            <h1>CSS-Only Implementation</h1>
+            <p>
+                This navigation system uses no JavaScript. The hamburger menu toggle 
+                is achieved using the "checkbox hack" - a hidden checkbox input whose 
+                checked state is used to control the visibility of the mobile menu 
+                through CSS sibling selectors.
+            </p>
+            <p>
+                The hamburger icon animates into an X using CSS transforms on the 
+                three line elements. The dropdown menus use :hover and :focus-within 
+                pseudo-classes for accessibility, ensuring keyboard users can also 
+                access the dropdown content.
+            </p>
+        </section>
+    </main>
+</body>
+</html>
