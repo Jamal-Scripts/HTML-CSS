@@ -1,1 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        PROJECT 1: ANIMATED PRICING CARDS COMPONENT
+        ============================================
+        This project demonstrates intermediate HTML/CSS skills including:
+        - CSS Custom Properties (variables) for theme consistency
+        - CSS Grid for the overall card layout
+        - Flexbox for internal card content alignment
+        - CSS Transitions for smooth hover animations
+        - Pseudo-elements (::before, ::after) for decorative effects
+        - Transform properties for 3D-like hover effects
+        - Box-shadow layering for depth perception
+        - Responsive design using media queries
+        
+        Author: [Your Name]
+        Purpose: Showcase a modern, interactive pricing component
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Pricing Cards</title>
+    
+    <!-- 
+        Google Fonts Import: Using Poppins for a modern, geometric sans-serif look
+        that provides excellent readability and a professional appearance
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 
+            CSS CUSTOM PROPERTIES (VARIABLES)
+            =================================
+            Defining all colors, spacing, and timing values as variables
+            allows for easy theme modifications and maintains consistency
+            throughout the entire component. This is a best practice for
+            scalable CSS architecture.
+        */
+        :root {
+            /* Primary color palette - using a deep blue as the main accent */
+            --color-primary: #2563eb;
+            --color-primary-dark: #1d4ed8;
+            --color-primary-light: #3b82f6;
+            
+            /* Secondary accent color - gold for the featured/popular card */
+            --color-accent: #f59e0b;
+            --color-accent-dark: #d97706;
+            
+            /* Neutral colors for text and backgrounds */
+            --color-text-primary: #1e293b;
+            --color-text-secondary: #64748b;
+            --color-text-light: #94a3b8;
+            --color-background: #f8fafc;
+            --color-card-bg: #ffffff;
+            --color-border: #e2e8f0;
+            
+            /* Spacing scale - using a consistent 4px base unit */
+            --spacing-xs: 0.5rem;    /* 8px */
+            --spacing-sm: 1rem;      /* 16px */
+            --spacing-md: 1.5rem;    /* 24px */
+            --spacing-lg: 2rem;      /* 32px */
+            --spacing-xl: 3rem;      /* 48px */
+            
+            /* Border radius values for consistent rounded corners */
+            --radius-sm: 0.5rem;
+            --radius-md: 1rem;
+            --radius-lg: 1.5rem;
+            
+            /* Transition timing for smooth animations */
+            --transition-fast: 150ms ease;
+            --transition-normal: 300ms ease;
+            --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Box shadow definitions for depth layers */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+                         0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+                         0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+                         0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
 
+        /* 
+            CSS RESET & BASE STYLES
+            =======================
+            Applying a minimal reset to ensure consistent rendering
+            across different browsers. Using border-box sizing model
+            makes width calculations more intuitive.
+        */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 
+            BODY STYLES
+            ===========
+            Setting up the main container with a subtle gradient background
+            and centering the content both horizontally and vertically
+            using min-height: 100vh for full viewport coverage.
+        */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--color-background) 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+        }
+
+        /* 
+            MAIN CONTAINER
+            ==============
+            Using Flexbox to center the pricing section wrapper
+            within the viewport. This provides flexibility for
+            adding header/footer content later.
+        */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        /* 
+            SECTION HEADER STYLES
+            =====================
+            The header introduces the pricing section with a title
+            and subtitle. Text-align center keeps everything balanced.
+        */
+        .section-header {
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .section-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-sm);
+            /* 
+                Letter-spacing slightly negative for tighter heading text,
+                which is a modern typographic trend for large text
+            */
+            letter-spacing: -0.02em;
+        }
+
+        .section-header p {
+            font-size: 1.125rem;
+            color: var(--color-text-secondary);
+            font-weight: 400;
+        }
+
+        /* 
+            PRICING CARDS GRID CONTAINER
+            ============================
+            CSS Grid is used here because we need a two-dimensional layout
+            where cards align both horizontally and vertically. The auto-fit
+            with minmax() creates a responsive grid without media queries.
+        */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        /* 
+            INDIVIDUAL PRICING CARD STYLES
+            ==============================
+            Each card uses Flexbox for vertical content arrangement.
+            The position: relative is required for the pseudo-element
+            decorations that will be positioned absolutely.
+        */
+        .pricing-card {
+            background: var(--color-card-bg);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-md);
+            /* 
+                Transition on transform and box-shadow enables
+                the smooth hover lift effect
+            */
+            transition: transform var(--transition-slow),
+                        box-shadow var(--transition-slow);
+        }
+
+        /* 
+            CARD HOVER STATE
+            ================
+            On hover, the card lifts up (translateY) and gains
+            a more prominent shadow, creating a 3D floating effect.
+            This provides visual feedback and improves interactivity.
+        */
+        .pricing-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* 
+            DECORATIVE PSEUDO-ELEMENT
+            =========================
+            This ::before pseudo-element creates a gradient accent
+            bar at the top of each card. It's positioned absolutely
+            and starts off-screen (top: -100%), then slides down
+            on hover for an animated reveal effect.
+        */
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform var(--transition-normal);
+        }
+
+        .pricing-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        /* 
+            FEATURED CARD MODIFIER
+            ======================
+            The "popular" card gets special styling to stand out.
+            Using a modifier class (.pricing-card--featured) follows
+            BEM naming convention for maintainable CSS.
+        */
+        .pricing-card--featured {
+            border-color: var(--color-accent);
+            /* 
+                Scale slightly larger to emphasize importance
+                while maintaining grid alignment
+            */
+            transform: scale(1.02);
+        }
+
+        .pricing-card--featured::before {
+            background: linear-gradient(90deg, var(--color-accent), var(--color-accent-dark));
+            transform: scaleX(1);
+        }
+
+        .pricing-card--featured:hover {
+            transform: scale(1.02) translateY(-8px);
+        }
+
+        /* 
+            POPULAR BADGE
+            =============
+            An absolutely positioned badge that appears on the
+            featured card. Uses transform to angle it and position
+            it in the corner for a ribbon-like effect.
+        */
+        .badge {
+            position: absolute;
+            top: var(--spacing-sm);
+            right: var(--spacing-sm);
+            background: var(--color-accent);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* 
+            CARD HEADER SECTION
+            ===================
+            Contains the plan name and description.
+            Flex-shrink: 0 prevents this from shrinking
+            when the card content is too tall.
+        */
+        .card-header {
+            flex-shrink: 0;
+        }
+
+        .plan-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .plan-description {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* 
+            PRICE DISPLAY SECTION
+            =====================
+            The price is the focal point, so it uses larger typography.
+            Flexbox aligns the currency symbol, amount, and period
+            along the baseline for proper visual alignment.
+        */
+        .price-container {
+            display: flex;
+            align-items: baseline;
+            gap: 0.25rem;
+        }
+
+        .currency {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            /* 
+                Align-self: flex-start pushes the currency symbol
+                to the top of the price number for a superscript effect
+            */
+            align-self: flex-start;
+            margin-top: 0.5rem;
+        }
+
+        .price {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            line-height: 1;
+            letter-spacing: -0.03em;
+        }
+
+        .period {
+            font-size: 1rem;
+            color: var(--color-text-light);
+            font-weight: 400;
+        }
+
+        /* 
+            FEATURES LIST
+            =============
+            The list of included features uses a custom checkmark
+            icon via a ::before pseudo-element instead of default
+            list markers for better visual control.
+        */
+        .features-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            /* 
+                Flex-grow: 1 makes this section expand to fill
+                available space, pushing the CTA button to the bottom
+            */
+            flex-grow: 1;
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--color-border);
+        }
+
+        .features-list li {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: 0.9375rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* 
+            CUSTOM CHECKMARK ICON
+            =====================
+            Using a pseudo-element to create a checkmark icon
+            without requiring external icon libraries. The checkmark
+            is made with CSS borders rotated 45 degrees.
+        */
+        .features-list li::before {
+            content: '';
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* 
+                The checkmark is created using a technique where we
+                use the background as the circle and create the check
+                with a box-shadow inset
+            */
+            position: relative;
+        }
+
+        /* 
+            The actual checkmark shape using ::after pseudo-element
+            Creates an "L" shape, then rotates it to form a checkmark
+        */
+        .features-list li::after {
+            content: '';
+            position: absolute;
+            left: 7px;
+            width: 5px;
+            height: 9px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* 
+            Wrapper needed for proper positioning of the checkmark
+            relative to each list item
+        */
+        .feature-item {
+            position: relative;
+            padding-left: calc(20px + var(--spacing-sm));
+        }
+
+        /* 
+            CTA BUTTON STYLES
+            =================
+            The call-to-action button uses a gradient background
+            with multiple transition properties for a polished
+            hover effect including background position shift.
+        */
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            /* 
+                Background-size larger than 100% allows us to
+                animate the gradient position on hover
+            */
+            background-size: 200% 200%;
+            background-position: 0% 0%;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: background-position var(--transition-normal),
+                        box-shadow var(--transition-normal),
+                        transform var(--transition-fast);
+            margin-top: auto;
+            text-decoration: none;
+        }
+
+        .cta-button:hover {
+            background-position: 100% 100%;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .cta-button:active {
+            transform: scale(0.98);
+        }
+
+        /* 
+            FEATURED CARD BUTTON VARIANT
+            ============================
+            The featured card's button uses the accent color
+            to maintain visual consistency with the card's theme
+        */
+        .pricing-card--featured .cta-button {
+            background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
+        }
+
+        .pricing-card--featured .cta-button:hover {
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        /* 
+            RESPONSIVE ADJUSTMENTS
+            ======================
+            Media queries handle layout changes for smaller screens.
+            On mobile, cards stack vertically and the featured card
+            no longer scales up to prevent horizontal overflow.
+        */
+        @media (max-width: 768px) {
+            .section-header h1 {
+                font-size: 2rem;
+            }
+
+            .pricing-card--featured {
+                transform: none;
+            }
+
+            .pricing-card--featured:hover {
+                transform: translateY(-8px);
+            }
+
+            .price {
+                font-size: 2.75rem;
+            }
+        }
+
+        /* 
+            Additional breakpoint for very small screens
+            to ensure proper padding and readable text sizes
+        */
+        @media (max-width: 480px) {
+            body {
+                padding: var(--spacing-sm);
+            }
+
+            .pricing-card {
+                padding: var(--spacing-lg);
+            }
+
+            .section-header h1 {
+                font-size: 1.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 
+        MAIN CONTAINER
+        ==============
+        Wraps all content and provides max-width constraint
+        for optimal reading width on large screens
+    -->
+    <div class="container">
+        
+        <!-- 
+            SECTION HEADER
+            ==============
+            Introduces the pricing section with a compelling
+            headline and supporting description text
+        -->
+        <header class="section-header">
+            <h1>Choose Your Perfect Plan</h1>
+            <p>Select the plan that best fits your needs. All plans include a 14-day free trial with no credit card required.</p>
+        </header>
+
+        <!-- 
+            PRICING CARDS GRID
+            ==================
+            Three pricing tiers arranged in a responsive grid.
+            The middle card is marked as "featured" to highlight
+            the most popular or recommended option.
+        -->
+        <div class="pricing-grid">
+            
+            <!-- 
+                STARTER PLAN CARD
+                =================
+                Entry-level tier for individuals or small projects
+            -->
+            <article class="pricing-card">
+                <div class="card-header">
+                    <h2 class="plan-name">Starter</h2>
+                    <p class="plan-description">Perfect for individuals and small projects</p>
+                </div>
+                
+                <div class="price-container">
+                    <span class="currency">$</span>
+                    <span class="price">9</span>
+                    <span class="period">/month</span>
+                </div>
+                
+                <ul class="features-list">
+                    <li class="feature-item">Up to 5 projects</li>
+                    <li class="feature-item">10GB storage space</li>
+                    <li class="feature-item">Basic analytics dashboard</li>
+                    <li class="feature-item">Email support</li>
+                    <li class="feature-item">API access</li>
+                </ul>
+                
+                <a href="#" class="cta-button">Get Started</a>
+            </article>
+
+            <!-- 
+                PROFESSIONAL PLAN CARD (FEATURED)
+                =================================
+                Mid-tier option highlighted as the best value.
+                Includes the "Most Popular" badge and special styling.
+            -->
+            <article class="pricing-card pricing-card--featured">
+                <span class="badge">Most Popular</span>
+                
+                <div class="card-header">
+                    <h2 class="plan-name">Professional</h2>
+                    <p class="plan-description">Ideal for growing teams and businesses</p>
+                </div>
+                
+                <div class="price-container">
+                    <span class="currency">$</span>
+                    <span class="price">29</span>
+                    <span class="period">/month</span>
+                </div>
+                
+                <ul class="features-list">
+                    <li class="feature-item">Unlimited projects</li>
+                    <li class="feature-item">100GB storage space</li>
+                    <li class="feature-item">Advanced analytics &amp; reports</li>
+                    <li class="feature-item">Priority email &amp; chat support</li>
+                    <li class="feature-item">Full API access</li>
+                    <li class="feature-item">Team collaboration tools</li>
+                </ul>
+                
+                <a href="#" class="cta-button">Get Started</a>
+            </article>
+
+            <!-- 
+                ENTERPRISE PLAN CARD
+                ====================
+                Premium tier for large organizations with
+                custom requirements and dedicated support
+            -->
+            <article class="pricing-card">
+                <div class="card-header">
+                    <h2 class="plan-name">Enterprise</h2>
+                    <p class="plan-description">For large organizations with custom needs</p>
+                </div>
+                
+                <div class="price-container">
+                    <span class="currency">$</span>
+                    <span class="price">99</span>
+                    <span class="period">/month</span>
+                </div>
+                
+                <ul class="features-list">
+                    <li class="feature-item">Unlimited everything</li>
+                    <li class="feature-item">1TB storage space</li>
+                    <li class="feature-item">Custom analytics solutions</li>
+                    <li class="feature-item">24/7 dedicated support</li>
+                    <li class="feature-item">Advanced security features</li>
+                    <li class="feature-item">Custom integrations</li>
+                    <li class="feature-item">SLA guarantee</li>
+                </ul>
+                
+                <a href="#" class="cta-button">Contact Sales</a>
+            </article>
+
+        </div>
+    </div>
+</body>
+</html>
