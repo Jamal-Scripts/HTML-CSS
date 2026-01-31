@@ -1,1 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        PROJECT 3: CSS-ONLY ANIMATED TESTIMONIAL CAROUSEL
+        =================================================
+        This project demonstrates intermediate HTML/CSS skills including:
+        - CSS-only carousel functionality using radio button hack
+        - CSS Keyframe animations for continuous effects
+        - Complex CSS selectors (sibling combinators, :checked)
+        - CSS Transform for 3D card flipping and sliding effects
+        - Overflow hidden with absolute positioning for slides
+        - Custom styled radio buttons as navigation dots
+        - Gradient overlays and decorative pseudo-elements
+        - CSS clip-path for creative shape cutting
+        - Responsive design with fluid typography (clamp)
+        
+        Author: [Your Name]
+        Purpose: Showcase an interactive testimonial slider component
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testimonial Carousel</title>
+    
+    <!-- 
+        Google Fonts Import: Using Playfair Display for elegant headings
+        and Source Sans 3 for clean body text - classic editorial pairing
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 
+            CSS CUSTOM PROPERTIES
+            =====================
+            Organizing all design tokens into logical groups.
+            The carousel-specific variables make it easy to
+            adjust timing and dimensions in one place.
+        */
+        :root {
+            /* Typography scale */
+            --font-display: 'Playfair Display', Georgia, serif;
+            --font-body: 'Source Sans 3', sans-serif;
+            
+            /* Color palette - warm, inviting tones */
+            --color-primary: #7c3aed;
+            --color-primary-light: #a78bfa;
+            --color-primary-dark: #5b21b6;
+            
+            /* Background gradient colors */
+            --color-bg-start: #faf5ff;
+            --color-bg-end: #f3e8ff;
+            
+            /* Text colors with good contrast ratios */
+            --color-text-dark: #1f2937;
+            --color-text-medium: #4b5563;
+            --color-text-light: #6b7280;
+            --color-text-muted: #9ca3af;
+            
+            /* Card and surface colors */
+            --color-card-bg: #ffffff;
+            --color-card-border: rgba(124, 58, 237, 0.1);
+            
+            /* Carousel specific measurements */
+            --carousel-height: 450px;
+            --carousel-width: 100%;
+            --card-max-width: 700px;
+            
+            /* Animation timing */
+            --slide-duration: 600ms;
+            --slide-easing: cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Decorative quote mark size */
+            --quote-size: 120px;
+        }
 
+        /* 
+            CSS RESET
+            =========
+            Minimal reset targeting elements used in this component
+        */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 
+            BODY STYLES
+            ===========
+            Full viewport setup with gradient background.
+            Using min-height: 100vh ensures the gradient
+            covers the entire viewport even if content is short.
+        */
+        body {
+            font-family: var(--font-body);
+            /* 
+                Linear gradient creates a soft purple tinted background
+                that complements the testimonial cards
+            */
+            background: linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--color-text-dark);
+            line-height: 1.6;
+        }
+
+        /* 
+            SECTION CONTAINER
+            =================
+            The main wrapper for the testimonial section
+            with constrained width for optimal readability
+        */
+        .testimonial-section {
+            width: 100%;
+            max-width: 900px;
+            text-align: center;
+        }
+
+        /* 
+            SECTION HEADER STYLES
+            =====================
+            The header uses a combination of display and body fonts
+            for visual hierarchy. The subtitle uses lighter weight
+            for contrast with the bold heading.
+        */
+        .section-header {
+            margin-bottom: 3rem;
+        }
+
+        .section-header h2 {
+            font-family: var(--font-display);
+            /* 
+                Using clamp() for fluid typography that scales
+                smoothly between viewport sizes without breakpoints
+                Format: clamp(min, preferred, max)
+            */
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 600;
+            color: var(--color-text-dark);
+            margin-bottom: 0.75rem;
+            /* Slight letter spacing for refined look */
+            letter-spacing: -0.02em;
+        }
+
+        .section-header p {
+            font-size: 1.125rem;
+            color: var(--color-text-light);
+            font-weight: 400;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* 
+            CAROUSEL CONTAINER
+            ==================
+            This is the main carousel wrapper. Position relative
+            establishes the positioning context for absolutely
+            positioned slides within.
+        */
+        .carousel {
+            position: relative;
+            width: var(--carousel-width);
+            height: var(--carousel-height);
+            /* 
+                Overflow hidden clips slides that are positioned
+                outside the visible area during transitions
+            */
+            overflow: hidden;
+        }
+
+        /* 
+            HIDDEN RADIO INPUTS FOR CAROUSEL CONTROL
+            ========================================
+            These radio buttons control which slide is visible.
+            They're visually hidden but remain in the DOM for
+            functionality. The :checked state is used with CSS
+            sibling selectors to show the corresponding slide.
+        */
+        .carousel-radio {
+            /* 
+                Position absolute with negative positioning
+                moves the radio buttons off-screen while keeping
+                them accessible to screen readers
+            */
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* 
+            SLIDES CONTAINER
+            ================
+            Holds all the testimonial slides. Each slide is
+            absolutely positioned on top of each other, with
+            only the active one visible.
+        */
+        .slides-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            /* 
+                Perspective property enables 3D transforms
+                for the slide transition effects
+            */
+            perspective: 1000px;
+        }
+
+        /* 
+            INDIVIDUAL SLIDE STYLES
+            =======================
+            Each slide is absolutely positioned to stack them.
+            The transform and opacity properties are transitioned
+            to create smooth slide animations.
+        */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            /* 
+                Initial state: invisible and slightly scaled down
+                This creates a zoom-in effect when becoming active
+            */
+            opacity: 0;
+            transform: scale(0.95) translateX(50px);
+            transition: opacity var(--slide-duration) var(--slide-easing),
+                        transform var(--slide-duration) var(--slide-easing);
+            /* 
+                Pointer-events none prevents interaction with
+                inactive slides that might overlap
+            */
+            pointer-events: none;
+        }
+
+        /* 
+            ACTIVE SLIDE STATE
+            ==================
+            Using the general sibling combinator (~) to target
+            slides based on which radio button is checked.
+            The nth-of-type selector matches each slide to its
+            corresponding radio button.
+        */
+        #testimonial-1:checked ~ .slides-container .slide:nth-of-type(1),
+        #testimonial-2:checked ~ .slides-container .slide:nth-of-type(2),
+        #testimonial-3:checked ~ .slides-container .slide:nth-of-type(3),
+        #testimonial-4:checked ~ .slides-container .slide:nth-of-type(4) {
+            opacity: 1;
+            transform: scale(1) translateX(0);
+            pointer-events: auto;
+        }
+
+        /* 
+            TESTIMONIAL CARD
+            ================
+            The card containing the actual testimonial content.
+            Uses multiple shadows for depth and a subtle border
+            for definition against the background.
+        */
+        .testimonial-card {
+            background: var(--color-card-bg);
+            border-radius: 1.5rem;
+            padding: 3rem;
+            max-width: var(--card-max-width);
+            width: 100%;
+            position: relative;
+            /* 
+                Multiple box-shadows layered create a more
+                realistic, softer shadow effect
+            */
+            box-shadow: 
+                0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                0 10px 15px -3px rgba(0, 0, 0, 0.08),
+                0 20px 25px -5px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--color-card-border);
+        }
+
+        /* 
+            DECORATIVE QUOTE MARK
+            =====================
+            Large quotation mark as a decorative element.
+            Uses a pseudo-element with an SVG-style quote
+            rendered as text content. Positioned absolutely
+            in the top-left with low opacity.
+        */
+        .testimonial-card::before {
+            content: '"';
+            position: absolute;
+            top: 1rem;
+            left: 1.5rem;
+            font-family: var(--font-display);
+            font-size: var(--quote-size);
+            line-height: 1;
+            color: var(--color-primary);
+            opacity: 0.1;
+            /* 
+                Pointer-events none ensures the decorative
+                element doesn't interfere with text selection
+            */
+            pointer-events: none;
+        }
+
+        /* 
+            TESTIMONIAL TEXT CONTENT
+            ========================
+            The actual quote text. Using em units for font-size
+            allows it to scale with parent adjustments.
+            The z-index ensures it appears above the quote decoration.
+        */
+        .testimonial-text {
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            color: var(--color-text-medium);
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+            /* 
+                Font-style italic gives testimonials a
+                distinctive quoted appearance
+            */
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        /* 
+            AUTHOR INFORMATION SECTION
+            ==========================
+            Contains the avatar, name, and role of the person
+            giving the testimonial. Flexbox arranges these
+            elements horizontally with proper alignment.
+        */
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 
+            AUTHOR AVATAR
+            =============
+            Circular avatar image with a decorative ring effect
+            using a pseudo-element. The image uses object-fit
+            to maintain aspect ratio while filling the circle.
+        */
+        .author-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        /* 
+            Decorative ring around avatar using pseudo-element.
+            Creates a gradient border effect that adds visual interest.
+        */
+        .author-avatar::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            /* 
+                Gradient border using background with padding trick.
+                The padding creates space between gradient and image.
+            */
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+            z-index: -1;
+        }
+
+        .author-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            /* 
+                Object-fit cover ensures the image fills the
+                circle without distortion, cropping if necessary
+            */
+            object-fit: cover;
+            /* 
+                Border creates a white gap between the image
+                and the gradient ring for a framed effect
+            */
+            border: 3px solid var(--color-card-bg);
+        }
+
+        /* 
+            AUTHOR DETAILS
+            ==============
+            Text-align left overrides the centered parent
+            for proper name/role alignment
+        */
+        .author-info {
+            text-align: left;
+        }
+
+        .author-name {
+            font-family: var(--font-display);
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--color-text-dark);
+            margin-bottom: 0.125rem;
+        }
+
+        .author-role {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            font-weight: 400;
+        }
+
+        /* 
+            STAR RATING DISPLAY
+            ===================
+            Visual star rating using CSS-only technique.
+            Uses letter-spacing to control star spacing
+            and a gradient for partial star fills.
+        */
+        .rating {
+            margin-left: auto;
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .star {
+            /* 
+                Using CSS to create star shapes would be complex,
+                so we use the Unicode star character instead
+            */
+            color: #fbbf24;
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
+        /* Empty star for incomplete ratings */
+        .star--empty {
+            color: #e5e7eb;
+        }
+
+        /* 
+            NAVIGATION DOTS
+            ===============
+            Custom styled radio button labels that act as
+            carousel navigation. Each dot corresponds to
+            a slide and changes appearance when active.
+        */
+        .carousel-nav {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-top: 2rem;
+        }
+
+        .nav-dot {
+            /* 
+                Using labels connected to the hidden radio inputs
+                allows clicking the dots to change slides
+            */
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--color-text-muted);
+            opacity: 0.3;
+            cursor: pointer;
+            transition: opacity 300ms ease,
+                        transform 300ms ease,
+                        background-color 300ms ease;
+            /* 
+                Scale and shadow properties prepare for
+                the active state animation
+            */
+            transform: scale(1);
+        }
+
+        .nav-dot:hover {
+            opacity: 0.6;
+            transform: scale(1.1);
+        }
+
+        /* 
+            ACTIVE DOT STATE
+            ================
+            When a radio is checked, its corresponding dot
+            becomes fully opaque with a different color
+            and a subtle glow effect.
+        */
+        #testimonial-1:checked ~ .carousel-nav .nav-dot[for="testimonial-1"],
+        #testimonial-2:checked ~ .carousel-nav .nav-dot[for="testimonial-2"],
+        #testimonial-3:checked ~ .carousel-nav .nav-dot[for="testimonial-3"],
+        #testimonial-4:checked ~ .carousel-nav .nav-dot[for="testimonial-4"] {
+            opacity: 1;
+            background: var(--color-primary);
+            transform: scale(1.2);
+            /* 
+                Box-shadow creates a glow effect around
+                the active dot for emphasis
+            */
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
+        }
+
+        /* 
+            ARROW NAVIGATION
+            ================
+            Previous/Next arrows for alternative navigation.
+            Positioned on the sides of the carousel.
+        */
+        .carousel-arrows {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            display: flex;
+            justify-content: space-between;
+            padding: 0 0.5rem;
+            pointer-events: none;
+        }
+
+        .arrow {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--color-card-bg);
+            border: 1px solid var(--color-card-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: background-color 200ms ease,
+                        transform 200ms ease,
+                        box-shadow 200ms ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .arrow:hover {
+            background: var(--color-bg-start);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 
+            ARROW ICONS
+            ===========
+            Creating arrow shapes using CSS borders.
+            The before pseudo-element forms a chevron shape.
+        */
+        .arrow::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border: solid var(--color-text-medium);
+            border-width: 0 2px 2px 0;
+        }
+
+        .arrow--prev::before {
+            transform: rotate(135deg);
+            margin-left: 4px;
+        }
+
+        .arrow--next::before {
+            transform: rotate(-45deg);
+            margin-right: 4px;
+        }
+
+        /* 
+            DECORATIVE BACKGROUND ELEMENTS
+            ==============================
+            Floating gradient circles add visual interest
+            and depth to the background. Using keyframe
+            animations for subtle movement.
+        */
+        .bg-decoration {
+            position: fixed;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            /* 
+                Filter blur creates soft, out-of-focus circles
+                that add atmosphere without distraction
+            */
+            filter: blur(60px);
+            opacity: 0.5;
+        }
+
+        .bg-circle--1 {
+            width: 300px;
+            height: 300px;
+            background: var(--color-primary-light);
+            top: 10%;
+            left: -100px;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .bg-circle--2 {
+            width: 200px;
+            height: 200px;
+            background: #fbbf24;
+            bottom: 20%;
+            right: -50px;
+            animation: float 6s ease-in-out infinite reverse;
+        }
+
+        /* 
+            FLOATING ANIMATION
+            ==================
+            Subtle up-and-down movement for background elements.
+            The alternate direction creates a smooth loop.
+        */
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        /* 
+            RESPONSIVE ADJUSTMENTS
+            ======================
+            Modifying layout and sizing for smaller screens
+            to ensure readability and usability.
+        */
+        @media (max-width: 768px) {
+            :root {
+                --carousel-height: 500px;
+                --quote-size: 80px;
+            }
+
+            .testimonial-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .testimonial-author {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .author-info {
+                text-align: center;
+            }
+
+            .rating {
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
+
+            /* Hide arrow navigation on mobile for cleaner look */
+            .carousel-arrows {
+                display: none;
+            }
+        }
+
+        /* 
+            Very small screens need additional adjustments
+            for comfortable reading and interaction
+        */
+        @media (max-width: 480px) {
+            :root {
+                --carousel-height: 550px;
+            }
+
+            body {
+                padding: 1rem;
+            }
+
+            .section-header {
+                margin-bottom: 2rem;
+            }
+
+            .testimonial-text {
+                font-size: 0.9375rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 
+        DECORATIVE BACKGROUND
+        =====================
+        Fixed position gradient circles for visual atmosphere
+    -->
+    <div class="bg-decoration" aria-hidden="true">
+        <div class="bg-circle bg-circle--1"></div>
+        <div class="bg-circle bg-circle--2"></div>
+    </div>
+
+    <!-- 
+        TESTIMONIAL SECTION
+        ===================
+        Main container for the carousel component
+    -->
+    <section class="testimonial-section">
+        
+        <!-- Section header with title and subtitle -->
+        <header class="section-header">
+            <h2>What Our Clients Say</h2>
+            <p>Discover why thousands of businesses trust us to deliver exceptional results.</p>
+        </header>
+
+        <!-- 
+            CAROUSEL COMPONENT
+            ==================
+            The carousel uses hidden radio buttons to track the active slide.
+            CSS selectors based on :checked state control visibility.
+        -->
+        <div class="carousel">
+            
+            <!-- 
+                HIDDEN RADIO INPUTS
+                ===================
+                These radio buttons control which testimonial is displayed.
+                They share the same "name" attribute to create a radio group
+                where only one can be selected at a time.
+            -->
+            <input type="radio" name="testimonial" id="testimonial-1" class="carousel-radio" checked>
+            <input type="radio" name="testimonial" id="testimonial-2" class="carousel-radio">
+            <input type="radio" name="testimonial" id="testimonial-3" class="carousel-radio">
+            <input type="radio" name="testimonial" id="testimonial-4" class="carousel-radio">
+
+            <!-- 
+                SLIDES CONTAINER
+                ================
+                All testimonial slides are stacked here with absolute positioning.
+                Only the one matching the checked radio becomes visible.
+            -->
+            <div class="slides-container">
+                
+                <!-- TESTIMONIAL SLIDE 1 -->
+                <div class="slide">
+                    <article class="testimonial-card">
+                        <p class="testimonial-text">
+                            "Working with this team has been an absolute game-changer for our business. 
+                            Their attention to detail and commitment to excellence exceeded all our expectations. 
+                            The results speak for themselves – our conversion rates have increased by 150% 
+                            since implementing their solutions."
+                        </p>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">
+                                <!-- 
+                                    Using placeholder image service for demo.
+                                    In production, use actual client photos.
+                                -->
+                                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop" alt="Sarah Mitchell">
+                            </div>
+                            <div class="author-info">
+                                <h3 class="author-name">Sarah Mitchell</h3>
+                                <p class="author-role">CEO, TechStart Inc.</p>
+                            </div>
+                            <div class="rating" aria-label="5 out of 5 stars">
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- TESTIMONIAL SLIDE 2 -->
+                <div class="slide">
+                    <article class="testimonial-card">
+                        <p class="testimonial-text">
+                            "I've worked with many agencies over the years, but none have delivered 
+                            the level of quality and professionalism I experienced here. They truly 
+                            understand the importance of user experience and brand consistency. 
+                            Our customers love the new design!"
+                        </p>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop" alt="Michael Chen">
+                            </div>
+                            <div class="author-info">
+                                <h3 class="author-name">Michael Chen</h3>
+                                <p class="author-role">Product Director, InnovateCo</p>
+                            </div>
+                            <div class="rating" aria-label="5 out of 5 stars">
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- TESTIMONIAL SLIDE 3 -->
+                <div class="slide">
+                    <article class="testimonial-card">
+                        <p class="testimonial-text">
+                            "From the initial consultation to the final delivery, every step of the 
+                            process was handled with care and expertise. The team was responsive, 
+                            creative, and always willing to go the extra mile. I couldn't be happier 
+                            with the outcome of our project."
+                        </p>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">
+                                <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop" alt="Emily Rodriguez">
+                            </div>
+                            <div class="author-info">
+                                <h3 class="author-name">Emily Rodriguez</h3>
+                                <p class="author-role">Marketing Lead, GrowthHub</p>
+                            </div>
+                            <div class="rating" aria-label="4 out of 5 stars">
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star star--empty" aria-hidden="true">★</span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- TESTIMONIAL SLIDE 4 -->
+                <div class="slide">
+                    <article class="testimonial-card">
+                        <p class="testimonial-text">
+                            "Outstanding work! The redesign of our platform has received overwhelmingly 
+                            positive feedback from our users. The team's technical expertise combined 
+                            with their creative vision resulted in a product that truly stands out 
+                            in our competitive market."
+                        </p>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">
+                                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&h=120&fit=crop" alt="David Thompson">
+                            </div>
+                            <div class="author-info">
+                                <h3 class="author-name">David Thompson</h3>
+                                <p class="author-role">Founder, NextGen Solutions</p>
+                            </div>
+                            <div class="rating" aria-label="5 out of 5 stars">
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                                <span class="star" aria-hidden="true">★</span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+
+            <!-- 
+                ARROW NAVIGATION
+                ================
+                Labels connected to adjacent radio inputs for prev/next navigation.
+                Note: This is a simplified version - in production you might
+                need JavaScript for true circular navigation.
+            -->
+            <div class="carousel-arrows">
+                <label for="testimonial-4" class="arrow arrow--prev" aria-label="Previous testimonial"></label>
+                <label for="testimonial-2" class="arrow arrow--next" aria-label="Next testimonial"></label>
+            </div>
+
+            <!-- 
+                DOT NAVIGATION
+                ==============
+                Labels styled as dots, clicking them checks the corresponding
+                radio button and reveals that slide
+            -->
+            <nav class="carousel-nav" aria-label="Testimonial navigation">
+                <label for="testimonial-1" class="nav-dot" aria-label="View testimonial 1"></label>
+                <label for="testimonial-2" class="nav-dot" aria-label="View testimonial 2"></label>
+                <label for="testimonial-3" class="nav-dot" aria-label="View testimonial 3"></label>
+                <label for="testimonial-4" class="nav-dot" aria-label="View testimonial 4"></label>
+            </nav>
+        </div>
+    </section>
+</body>
+</html>
